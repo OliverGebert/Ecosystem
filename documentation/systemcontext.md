@@ -8,3 +8,4 @@
 
 ![C4 Container Diagram](./pictures/structurizr-ContainerViewEcosystem.svg)
 
+## Ecosystem Component View
