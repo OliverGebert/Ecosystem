@@ -1,5 +1,9 @@
 *.puml
 *.svg
 *.pdf
+*.png
 
 /venv
+/documentation/.structurizr
+/documentation/workspace.json
+
