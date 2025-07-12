@@ -1,9 +1,20 @@
+# documentation and grafic files
 *.puml
 *.svg
 *.pdf
 *.png
 
-/venv
+# virtual environments
+venv/
+.venv/
+
+# structurizr files 
 /documentation/.structurizr
 /documentation/workspace.json
 
+# Python
+__pycache__/
+.pytest_cache/
+
+# MacOS
+.DS_Store

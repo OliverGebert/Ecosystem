@@ -1,0 +1,50 @@
+
+openapi: 3.0.3
+info:
+  title: FastAPI Example
+  version: "1.0.0"
+paths:
+  /:
+    get:
+      summary: Read Root
+      operationId: read_root
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Hello:
+                    type: string
+                    example: World
+
+  /items/{item_id}:
+    get:
+      summary: Read Item
+      operationId: read_item
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item_id:
+                    type: integer
+                  q:
+                    type: string
+                    nullable: true

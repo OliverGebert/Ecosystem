@@ -3,10 +3,14 @@ workspace "Name" "Description" {
     !identifiers hierarchical
 
     model {
-        u = person "User"
+        uweb = person "Web User"
+        ulocal = person "Local User"
         ss = softwareSystem "Software System Ecosystem" {
             spa = container "Single Page Application" {
                 technology "Vue.js"
+            }
+            cli = container "Ecosystem CLI" {
+                technology "python cli"
             }
             api = container "Ecosystem REST API" {
                 technology "Python fastAPI"
@@ -17,8 +21,10 @@ workspace "Name" "Description" {
             }
         }
 
-        u -> ss.spa "Uses"
+        uweb -> ss.spa "Uses"
+        ulocal -> ss.cli "Uses"
         ss.spa -> ss.api "Reads from and writes to"
+        ss.cli -> ss.api "Reads from and writes to"
         ss.api -> ss.db "Reads from writes to"
     }
 

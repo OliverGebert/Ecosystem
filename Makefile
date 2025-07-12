@@ -5,14 +5,21 @@ export MAKE_TERMOUT := 1
 BLUE := \\033[1;34m
 RESET := \\033[0m
 
-.PHONY: startdocker stopdocker runstructurizr run run_cli run_api test test_cli test_api cleandocs generate_puml generatedocs generate_svg generate_drawio generate_py generate_md
+.PHONY: startdocker stopdocker runstructurizr stopstructurizr buildapi testapi runapi stopapi testcli runcli cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
 
 # ========== Configuration ==========
 
 #General
+ECOPATH := /Users/oli/home/Ecosystem/
 DOCPATH := documentation/
 PICPATH := $(DOCPATH)pictures/
 SRCPATH := cliclient/src/Eco/
+APIPATH := restapi/
+
+# restapi setup
+IMAGE_NAME := eco-fastapi-app
+APICONTAINER_NAME := eco-fastapi-container
+APIPORT := 8040
 
 # Draw.io setup
 DRAWIOS := $(wildcard $(DOCPATH)*.drawio)
@@ -22,6 +29,8 @@ PNGS := $(DRAWIOS:.drawio=.png)
 DSL := $(DOCPATH)workspace.dsl
 PUMLS := $(wildcard $(PICPATH)*.puml)
 SVGS := $(PUMLS:.puml=.svg)
+STRUCTURIZRCONTAINER_NAME := structurizr-container
+STRUCTURIZRPORT := 8080
 
 # Pyreverse setup
 NAME := Ecosystem
@@ -37,43 +46,55 @@ PDFS := $(MDS:.md=.pdf)
 
 # start colima for docker 
 startdocker:
-	@printf "$(BLUE)*** start docker with colima\\n"
+	@printf "$(BLUE)*** start docker with colima$(RESET)\\n"
 	colima start
 
 # stop docker
 stopdocker:
-	@printf "$(BLUE)*** stop docker with colima\\n"
+	@printf "$(BLUE)*** stop docker with colima$(RESET)\\n"
 	colima stop
 
 # run structurizr container
 runstructurizr:
-	@printf "$(BLUE)*** run structurizr as docker container\\n"
-	docker run -dit --rm start\
-		-p 8080:8080 \
-		-v /Users/oli/home/Ecosystem/documentation:/usr/local/structurizr \
+	@printf "$(BLUE)*** run structurizr as docker container$(RESET)\\n"
+	docker run -dit --rm \
+		--name $(STRUCTURIZRCONTAINER_NAME) \
+		-p $(STRUCTURIZRPORT):$(STRUCTURIZRPORT) \
+		-v $(ECOPATH)documentation:/usr/local/structurizr \
 		structurizr/lite
 
-# ===== run api and cli
-run: runapi runcli
+# stop strcuturizr container
+stopstructurizr:
+	@printf "$(BLUE)*** stop structurizr container $(RESET)\\n"
+	docker stop $(STRUCTURIZRCONTAINER_NAME) || true
 
-# execute python Ecosystem API
-run_api:
-
-# execute python CLI client
-run_cli:
-	@printf "$(BLUE)*** python ecosystem execution\\n"
-	PYTHONPATH=src python $(SRCPATH)ecosystem.py 
-
-# ===== test api and cli
-test: testapi testcli
+# build Ecosystem API container
+buildapi:
+	@printf "$(BLUE)*** build fastapi container $(RESET)\\n"
+	docker build -t $(IMAGE_NAME) -f $(APIPATH)Dockerfile $(APIPATH)
 
 # test Ecosystem API
-test_api:
+testapi:
+
+# run Ecosystem API
+runapi:
+	@printf "$(BLUE)*** run fastapi container on port $(APIPORT)$(RESET)\\n"
+	docker run -dit --rm --name $(APICONTAINER_NAME) -p $(APIPORT):$(APIPORT) $(IMAGE_NAME)
+
+# stop restapi container
+stopapi:
+	@printf "$(BLUE)*** stop fastapi container $(RESET)\\n"
+	docker stop $(APICONTAINER_NAME) || true
 
 # test CLI client
-test_cli:
-	@printf "$(BLUE)*** pytest execution\\n"
+testcli:
+	@printf "$(BLUE)*** pytest execution$(RESET)\\n"
 	PYTHONPATH=src pytest -v
+
+# execute CLI client
+runcli:
+	@printf "$(BLUE)*** python ecosystem execution$(RESET)\\n"
+	PYTHONPATH=src python $(SRCPATH)ecosystem.py 
 
 # ===== clean all docs artifacts
 cleandocs:
@@ -81,11 +102,11 @@ cleandocs:
 	rm -f $(PNGS) $(PUMLS) $(SVGS) $(CLASSES_IMG) $(PACKAGES_IMG) $(PDFS)
 
 # intermediate step: generate all puml files from c4 .dsl file
-generate_puml:
+generatepuml:
 	@printf "$(BLUE)*** generate .puml files from $(DSL)$(RESET)\\n"
 	structurizr.sh export -workspace $(DSL) -format plantuml -output $(PICPATH)
 
-# ===== generate diagrams from drawio and Python = pdf from markdown -> assume generate_puml has been run
+# ===== generate diagrams from drawio and Python = pdf from markdown -> assume generatepuml has been run
 generatedocs: generate_drawio generate_svg generate_py generate_md
 
 # Only build drawio PNGs when drawio files changed
