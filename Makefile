@@ -5,7 +5,7 @@ export MAKE_TERMOUT := 1
 BLUE := \\033[1;34m
 RESET := \\033[0m
 
-.PHONY: startdocker stopdocker runstructurizr stopstructurizr buildapi testapi runapi stopapi testcli runcli cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
+.PHONY: startdocker stopdocker runstructurizr stopstructurizr buildapi testapi runapi stopapi testcli runcli testspa cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
 
 # ========== Configuration ==========
 
@@ -95,6 +95,9 @@ testcli:
 runcli:
 	@printf "$(BLUE)*** python ecosystem execution$(RESET)\\n"
 	PYTHONPATH=src python $(SRCPATH)ecosystem.py 
+
+# test SPA client
+testspa:
 
 # ===== clean all docs artifacts
 cleandocs:
