@@ -13,8 +13,9 @@ RESET := \\033[0m
 ECOPATH := /Users/oli/home/Ecosystem/
 DOCPATH := documentation/
 PICPATH := $(DOCPATH)pictures/
-SRCPATH := cliclient/src/Eco/
+CLIPATH := cliclient/src/
 APIPATH := restapi/
+PYTHONPATH=cliclient/src python cliclient/src/Eco/ecosystem.py 
 
 # restapi setup
 IMAGE_NAME := eco-fastapi-app
@@ -34,7 +35,7 @@ STRUCTURIZRPORT := 8080
 
 # Pyreverse setup
 NAME := Ecosystem
-PYFILES := $(wildcard $(SRCPATH)*.py)
+PYFILES := $(wildcard $(CLIPATH)Eco/*.py)
 CLASSES_IMG := $(DOCPATH)classes_$(NAME).png
 PACKAGES_IMG := $(DOCPATH)packages_$(NAME).png
 
@@ -89,12 +90,12 @@ stopapi:
 # test CLI client
 testcli:
 	@printf "$(BLUE)*** pytest execution$(RESET)\\n"
-	PYTHONPATH=src pytest -v
+	PYTHONPATH=$(CLIPATH) pytest -v
 
 # execute CLI client
 runcli:
 	@printf "$(BLUE)*** python ecosystem execution$(RESET)\\n"
-	PYTHONPATH=src python $(SRCPATH)ecosystem.py 
+	PYTHONPATH=$(CLIPATH) python $(CLIPATH)Eco/ecosystem.py 
 
 # test SPA client
 testspa:
@@ -139,7 +140,7 @@ $(PICPATH)%.svg: $(PICPATH)%.puml
 # Pattern rule: If any .py file changes, regenerate the .png diagrams
 $(CLASSES_IMG) $(PACKAGES_IMG): $(PYFILES)
 	@printf "$(BLUE)*** Generating class diagrams with pyreverse...$(RESET)\\n"
-	pyreverse -ASmy -o png -d $(DOCPATH) -p $(NAME) $(SRCPATH)
+	pyreverse -ASmy -o png -d $(DOCPATH) -p $(NAME) $(CLIPATH)Eco/
 
 # Pattern rule: convert .md → .pdf
 %.pdf: %.md

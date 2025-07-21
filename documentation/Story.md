@@ -57,7 +57,3 @@ It has the following features:
 - different creatures are attracted by different eco system states: humans are attracted by weather condition and number of birds and predators. Birds are attracted by other birds and absence of predators or humans. Predators are attracted by birds and absence of humans.
 - eco system knows all creatures at lake side, weather conditions, number of birds, humans and predators and total danger index.
 
-# Implementation Detail
-
-![PackageDiagram](./packages_Ecosystem.png)
-![ClassDiagram](./classes_Ecosystem.png)

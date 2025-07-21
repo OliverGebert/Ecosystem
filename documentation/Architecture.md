@@ -9,3 +9,8 @@
 ![C4 Container Diagram](./pictures/structurizr-ContainerViewEcosystem.svg)
 
 ## Ecosystem Component View
+
+## Implementation Detail
+
+![PackageDiagram](./packages_Ecosystem.png)
+![ClassDiagram](./classes_Ecosystem.png)
