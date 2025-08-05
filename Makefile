@@ -76,6 +76,8 @@ buildapi:
 
 # test Ecosystem API
 testapi:
+	@printf "$(BLUE)*** test fastapi container on port $(APIPORT)$(RESET)\\n"
+	hurl $(APIPATH)app/ecoapi.hurl
 
 # run Ecosystem API
 runapi:

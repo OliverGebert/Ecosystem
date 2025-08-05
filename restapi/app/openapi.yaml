@@ -1,50 +1,113 @@
-
 openapi: 3.0.3
 info:
-  title: FastAPI Example
-  version: "1.0.0"
+  title: Ecosystem Model API
+  version: 1.0.0
 paths:
-  /:
+  /ecosystems:
     get:
-      summary: Read Root
-      operationId: read_root
+      summary: List all ecosystems
       responses:
         '200':
-          description: Successful Response
+          description: A list of ecosystems
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  Hello:
-                    type: string
-                    example: World
-
-  /items/{item_id}:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ecosystem'
+    post:
+      summary: Create a new ecosystem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ecosystem'
+      responses:
+        '201':
+          description: Ecosystem created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ecosystem'
+  /ecosystems/{id}:
     get:
-      summary: Read Item
-      operationId: read_item
+      summary: Get an ecosystem by ID
       parameters:
-        - name: item_id
+        - name: id
           in: path
           required: true
-          schema:
-            type: integer
-        - name: q
-          in: query
-          required: false
           schema:
             type: string
       responses:
         '200':
-          description: Successful Response
+          description: Ecosystem details
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  item_id:
-                    type: integer
-                  q:
-                    type: string
-                    nullable: true
+                $ref: '#/components/schemas/Ecosystem'
+  /patches:
+    get:
+      summary: List all patches
+      responses:
+        '200':
+          description: A list of patches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Patch'
+    post:
+      summary: Create a new patch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patch'
+      responses:
+        '201':
+          description: Patch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patch'
+  /patches/{id}:
+    get:
+      summary: Get a patch by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Patch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patch'
+components:
+  schemas:
+    Ecosystem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+    Patch:
+      type: object
+      properties:
+        id:
+          type: string
+        ecosystemId:
+          type: string
+        name:
+          type: string
+        details:
+          type: string
