@@ -13,20 +13,32 @@ toc: false
 
 # Introduction and Motivation
 
-The Ecosystem is an interactive simulation designed to model a dynamic and self-sustaining virtual landscape. It aims to capture the complexity of real-world ecosystems by simulating the behavior of various animal species within a shared environment. The application allows the user to observe the ecosystem as it evolves over time, with the option to influence its development in two primary ways: by issuing direct commands to a special “human” agent that can navigate the terrain, and by modifying environmental conditions across the landscape. The player has full oversight of the map, making it possible to watch individual animal movements, monitor resource changes, and understand the interplay between species.
+The Ecosystem is an interactive simulation designed to model a dynamic and self-sustaining virtual landscape. It aims to capture the complexity, unpredictability, and feedback loops of natural ecosystems by simulating the behavior of various animal species, plant growth, and environmental change within a shared environment. Players can observe the emergent evolution of the ecosystem over many simulated years, with each agent and terrain feature interacting through clear, rule-driven logic.
 
-Before starting a simulation, the player can define the size of the map, the terrain types it contains, and the density and variety of animal populations. The map is built as a hexagonal grid, ensuring that each patch has exactly six neighboring patches, which supports natural movement patterns and balanced adjacency. Each patch is defined by static terrain attributes, such as vegetation, elevation, or water availability, and can be occupied by one or more animals depending on the simulation rules. Animals themselves have dynamic attributes, such as species type, vision range, strength, energy level, and fear level, which influence their decisions and survival chances.
+The application allows users to:
+- Observe the ecosystem as it evolves in real time or at accelerated rates.
+- Influence the environment by issuing direct commands to a unique “human” agent, introducing or removing species, or changing climate/terrain variables.
+- Pause, step through, and rewind simulation turns to analyze ecosystem dynamics and notable events.
+- Adjust simulation parameters (map size, climate variability, species traits, etc) before and during a run to explore "what-if" scenarios.
 
-In later extensions, the simulation can incorporate environmental effects such as weather and time of day, introducing conditions like daylight, darkness, heat, cold, sun, and rain. These global influences can alter animal behavior by affecting sight, energy, and fear, thereby creating more realistic and varied ecosystem dynamics. The simulation progresses in discrete rounds, during which each animal perceives its surroundings, makes movement decisions, resolves conflicts, and updates its state. This structured turn-based approach makes it possible to analyze the ecosystem in detail, trace cause-and-effect relationships, and apply deliberate interventions to shape the outcome.
+The map is a **hexagonal grid** supporting rich, natural movement and realistic adjacency. Each patch has terrain (vegetation, elevation, water), seasonal resource levels, and weather exposure. Agents (animals and plants) continuously adapt to changing circumstances, with species-specific sensors and motivations.
+
+Animal species are defined with:
+- **Behavioral schemas** that blend innate drives (food, safety, territory, mating, sociality) and adaptive responses to local context (weather, population density, predator/prey abundance).
+- A memory of previous experiences (e.g., dangerous spots, resource-rich patches), supporting advanced behaviors like migration, territory defense, and learning avoidance.
+- Interactions with both abiotic (wind, rain, temperature) and biotic (predators, prey, conspecifics, plants, human agent) factors.
+
+Environmental effects (weather, time of day, disasters) gradually shape the map, create migration waves, and influence plant growth cycles and animal well-being. Discrete rounds simulate perception, decision-making, movement, interaction/conflict, and patch/agent state updates for maximum transparency and debuggability. Each cycle supports animation and logging for deep analysis and replay.
+
+A robust interface overlays visualization of animal movement, resource flows, and weather, and provides a console for intervention commands and replay control, enabling educational and research uses as well as sandbox play.
 
 # Map and Patches
 
-The game world is represented as a **hexagon-based map** where each patch has exactly **six possible neighbors**.  
-The hex layout uses an **axial coordinate system** where each patch is identified by a pair of integers `(q, r)`.
+The world is a scalable **hex-based map** with exactly **six neighbors per patch**. dynamic terrain generation allows diverse layouts (lakes, forests, meadows, mountains, etc.) plus user-edited patches. The **axial coordinate system** `(q, r)` simplifies neighbor lookup and pathfinding. Persistently store the map state for replays and savegames.
 
 ## Hex Coordinates and Neighbors
 
-Neighbor positions are determined by adding one of six fixed offsets:
+Neighbor positions use six predefined offsets:
 
 | Direction  | Offset (q, r) |
 |------------|---------------|
@@ -37,158 +49,161 @@ Neighbor positions are determined by adding one of six fixed offsets:
 | South-West | (-1, 1)       |
 | South-East | (0, 1)        |
 
-This ensures:
-- Equal movement cost in all directions.
-- No diagonal bias.
-- Simple distance calculations.
+- All directions have equal cost, allowing A* or Dijkstra pathfinding.
+- Hex distance is `max(abs(q1-q2), abs(r1-r2), abs((-q1-r1)-(-q2-r2)))`.
+- Static map regions (e.g., mountains) can define permanent obstacles.
 
 ## Landscape Patches
 
-The simulation map is composed of interconnected hexagonal patches, each representing a specific type of terrain. These terrain types define the static attributes of a patch, which remain constant throughout the simulation unless altered by an external influence such as a player command or a weather event. The patch type directly affects the resources and shelter available to animals occupying it, influencing their movement, survival, and interaction decisions.
+The map automatically generates interconnected terrain zones (lake, sand, grass, wood, mountain) using cellular automata or Perlin noise for realism. Patches track evolving resource values (food, water, cover), climate effects, and past event history (fires, floods, heavy grazing). This helps simulate long-term environmental feedback.
 
 ![Ecosystem](./Ecosystem.png)
 
 ### Patch Types and Attributes
 
-Each patch belongs to one of the following terrain types:
+| Patch Type | Water | Food | Cover | Special | Description |
+|------------|-------|------|-------|---------|-------------|
+| **Lake**   | High  | Low  | Low   | Fish    | Open water, supports aquatic/water-adapted species, little cover. |
+| **Sand**   | Low   | Low  | Low   | Heat    | Arid, sparse vegetation, harsh for most animals. |
+| **Grass**  | Medium| High | Low   | Seeds   | Grazing fields, rich food, little cover. |
+| **Wood**   | Low   | Medium| High | Fruit   | Dense woodland, moderate food, high shelter value. |
+| **Mountain**| Low  | Low  | High  | None    | Impassable or costly to enter, refuge for some. |
 
-| Patch Type | Water | Food | Cover | Description |
-|------------|-------|------|-------|-------------|
-| **Lake**   | High  | Low  | Low   | Open water source, supports aquatic or water-dependent species, little cover for hiding. |
-| **Sand**   | Low   | Low  | Low   | Arid terrain with minimal vegetation and shelter, difficult for many species to inhabit. |
-| **Grass**  | Medium| High | Low   | Open plains with abundant grazing opportunities, limited cover from predators. |
-| **Wood**   | Low   | Medium| High  | Forested terrain with moderate food availability and strong cover for concealment and safety. |
 
-Water, food, and cover values influence how attractive a patch is to different animals based on their needs and survival strategies.
-
-### Visual Representation
-
-Each hexagonal patch is displayed with a distinct color corresponding to its terrain type:
-
-| Patch Type | Suggested Color |
-|------------|-----------------|
-| Lake       | Blue            |
-| Sand       | Beige / Light Yellow |
-| Grass      | Bright Green    |
-| Wood       | Dark Green / Brown |
-
-This immediate visual cue allows the player to identify terrain distribution across the map at a glance.
-
-Animals present on a patch are shown using **overlay icons** positioned at the center of the hexagon.  
-- **One animal per patch**: The icon can be displayed at up to **60–70% of the hex’s width**, making it easily visible without obscuring the terrain color.  
-- **Multiple animals per patch**: Options include stacking small icons in a cluster or displaying a single icon with a **small numeric counter** in the corner (e.g., “×3” to indicate three animals).  
-- **Special human agent**: Displayed with a unique icon (e.g., a human silhouette or flag) that is visually distinct from animal icons.
+Each patch displays a color (terrain type), resource bar overlays (food/water/cover), and weather or event icons (e.g., rain, snow, fire indicators). Animals are overlayed as icons:
+- Clustered icons with numeric counters when multiple animals occupy a patch, scaling shape/size for clarity.
+- Special icons for unique/human agents, event markers (tracks, nests, fallen trees).
+- Optional toggles for displaying agent vision cones or memory traces to visualize reasoning.
 
 ### Sizing and Screen Fit
 
-On a modern iPhone screen (approx. 1170×2532 pixels for iPhone 13 as a reference):
-- **Hexagon width**: Around **80–100 pixels** is comfortable for visibility and interaction.
-- **Icons**: Typically **50–70 pixels** wide when representing a single animal, scaling down proportionally for multiple animals.
-- **Number of patches visible**: At this size, around **8–10 hexes across** the short axis and **12–14 rows** vertically can be displayed without scrolling or zooming.  
-- **Zooming**: The interface should allow pinch-zoom to see more of the map at once or zoom in for detail.
+- On target screens (e.g., iPhone 13), hex width **80–100 px** for easy tap/drag/select.
+- Support flexible zoom (pinch, buttons), auto-crop for aspect ratio.
+- GUI overlays for map scrolling, zoom level, patch/animal inspectors.
+- Options to snap to agent moves or animate overlays for turn playback.
 
-This balance ensures the map is readable, the icons are distinguishable, and the terrain context remains visible, even on smaller screens.
+Supports 8–10 hexes across, 12–14 rows, and scrollable/zoomable map for very large worlds. Patch icons update in real time as simulation runs. Export full screenshot or replay as video/gif for sharing or analysis.
+
 it provides a system of elements like landscape, plants and animals, which require certain frame conditions to prosper and also provide constraints or attractors to animals in the same ecosystem.
 
 # Animals
 
-The simulation includes a variety of animal species, each with unique attributes and behavioral motivations. These differences affect how animals move, seek resources, and interact with other species. Attributes are expressed on a relative scale (e.g., Low, Medium, High) to simplify balancing in early development, but can be refined to numeric values for more precise simulation control.
+The simulation features a diverse set of animals—herbivores, omnivores, carnivores, and opportunists—each with unique attributes, memory, and adaptive behaviors. Species modules support easy addition of new animals or behavioral variations. Each animal is an AI agent capable of learning and adapting to changing environments.
 
 ## Animal Attributes
 
-| Species  | Food Preference         | Strength | Fear   | Sight  | Speed  |
-|----------|-------------------------|----------|--------|--------|--------|
-| Seagull  | Fish, small invertebrates| Low      | Medium | High   | High   |
-| Duck     | Aquatic plants, insects | Low      | Medium | Medium | Medium |
-| Deer     | Grass, leaves           | Medium   | High   | Medium | High   |
-| Boar     | Roots, plants, small animals | High | Medium | Medium | Medium |
-| Wolf     | Large herbivores, small mammals | High | Low | High | High   |
-| Lynx     | Small to medium mammals | High     | Low    | High  | Medium |
+| Species  | Food Preference          | Strength | Fear   | Sight  | Speed  | Social | Memory | Energy |
+|----------|--------------------------|----------|--------|--------|--------|--------|--------|--------|
+| Seagull  | Fish, invertebrates      | Low      | Med    | High   | High   | Flock  | Short  | High   |
+| Duck     | Aquatic plants, insects  | Low      | Med    | Med    | Med    | Flock  | Medium | Medium |
+| Deer     | Grass, leaves            | Medium   | High   | Med    | High   | Herd   | Medium | Med    |
+| Boar     | Roots, plants, small animals | High | Med    | Med    | Med    | Solo   | High   | High   |
+| Wolf     | Herbivores, mammals      | High     | Low    | High   | High   | Pack   | High   | High   |
+| Lynx     | Small mammals            | High     | Low    | High   | Med    | Solo   | High   | Med    |
+
+- **Social**: Behavioral grouping (solo, flock, herd, pack)—drives group tactics, sharing, coordinated movement.
+- **Memory**: Determines how long threats/resources/paths are remembered; supports learned avoidance, path optimization, and migration.
+- **Energy**: Fatigue/health tracker limiting travel, aggression, and activity per turn, requiring periodic rest and feeding.
+
+Animals respond to:
+- Local weather (e.g., seek cover from rain, avoid heat, migrate in winter).
+- Seasonal/diurnal changes (day/night active periods, breeding/migration seasons).
+- Dynamic resource distribution and population pressures.
+
+Agent code supports easy modular expansion:
+- Plug-in new species from a JSON/YAML definition.
+- Custom behavior scripts for special animals.
+- Event hooks for learning, migration, population booms/crashes.
 
 ## Motivations by Species
 
+Each species blends internal needs (hunger, safety, social) and external cues (predator proximity, resource density, seasonality) according to their characteristic weighting profiles. Motivation parameters are configurable per species, supporting tuning and emergence of surprise behaviors.
+
 - **Seagull**  
-  Can travel over water and is an opportunistic feeder. Motivated primarily by food availability near water. Highly mobile, often moving towards visible feeding grounds. Less concerned about predators when in flight, but will avoid high predator density areas on land.
+  Highly mobile, opportunistic. Primary motivator is visible food (especially near water); less predator-averse in open spaces. Flock dynamics influence flight and roosting spots, and limited memory leads to frequent scouting.
 
 - **Duck**  
-  Prefers lakes and grass near water, but is vulnerable to predators. Motivated strongly by proximity to water and aquatic vegetation. Balances food-seeking with high predator avoidance, especially when predators are in nearby patches.
+  Attracted to water and edge-of-water grass, but avoids crowded patches and visible predators. Responds to seasonal variation by migrating between patches. Social flocking increases survival probability, especially near danger.
 
 - **Deer**  
-  Grazing herbivore that is cautious and quick to flee. Primarily motivated by safety, avoiding predators aggressively even at the cost of reduced food intake. Moves towards open grassy areas with good visibility but low predator density.
+  Cautious grazer. Values safety above all (avoids patches with recent predator presence or poor cover). Prefers large, contiguous grassy areas with escape routes and follows herd cues when moving or fleeing.
 
 - **Boar**  
-  Omnivore that can defend itself aggressively if threatened. Motivated by a balance between food and territory. Will enter predator zones if food is abundant, relying on strength to deter attacks. Less fearful than deer, more willing to risk confrontation.
+  Aggressive omnivore with strong memory. Explores high-yield terrain even under threat, fights if cornered or protecting young. May "remember" and revisit resource-rich sites after other animals leave.
 
 - **Wolf**  
-  Pack-hunting predator, opportunistic and bold. Motivated mainly by prey presence, hunting actively and targeting herbivores. Less motivated by safety, but will retreat if outnumbered or injured. Prefers open or semi-open terrain for pursuit.
+  Pack hunter. Prioritizes visible prey and opponent counts over food per se; coordinates with nearby pack members. Tolerates risk, but will retreat to woods/mountains to recover if heavily injured or outnumbered.
 
 - **Lynx**  
-  Stealth predator that prefers ambush hunting. Motivated by stealth and prey density, choosing patches with good cover to approach prey undetected. Less aggressive in open terrain, more inclined to stalk than to chase over long distances.
+  Stealth predator. Moves quietly between high-cover patches (woods, rocks), exploiting surprise on less wary prey. Avoids open spaces, prefers ambush to direct chase; memorizes successful hunting grounds.
+
+Special parameters enable migration (seasonal, resource-driven), home-range fidelity, and social behaviors (herding, flocking, pack tactics).
 
 ## Motivation Weighting Table
 
-This table provides example numeric weights (0.0 to 1.0) for each species, defining the importance of **Food**, **Safety**, and **Opportunity** (e.g., hunting chances for predators, territorial advantage for others). The decision score for a move is calculated by multiplying observed patch values by these weights.
+| Species  | Food Wt | Safety Wt | Opportunity Wt | Social Wt | Memory Wt |
+|----------|---------|-----------|----------------|-----------|-----------|
+| Seagull  | 0.60    | 0.15      | 0.10           | 0.10      | 0.05      |
+| Duck     | 0.40    | 0.30      | 0.05           | 0.15      | 0.10      |
+| Deer     | 0.30    | 0.65      | 0.00           | 0.05      | 0.00      |
+| Boar     | 0.40    | 0.20      | 0.15           | 0.00      | 0.25      |
+| Wolf     | 0.20    | 0.10      | 0.55           | 0.10      | 0.05      |
+| Lynx     | 0.15    | 0.10      | 0.50           | 0.00      | 0.25      |
 
-| Species  | Food Weight | Safety Weight | Opportunity Weight |
-|----------|-------------|---------------|--------------------|
-| Seagull  | 0.7         | 0.2           | 0.1                |
-| Duck     | 0.5         | 0.4           | 0.1                |
-| Deer     | 0.4         | 0.6           | 0.0                |
-| Boar     | 0.5         | 0.3           | 0.2                |
-| Wolf     | 0.3         | 0.1           | 0.6                |
-| Lynx     | 0.3         | 0.2           | 0.5                |
+Score = Food * hunger_wt + Safety * safety_wt + Opportunity * opportunity_wt + Social * social_wt + Memory * memory_wt (with adjustments for species behavior, time of day, group feedback, etc).
 
-- **Food Weight**: Influence of food resources on movement choice.  
-- **Safety Weight**: Influence of avoiding danger or seeking cover.  
-- **Opportunity Weight**: Influence of hunting chances, ambush opportunities, or territorial advantage.
-Animals are autonomous agents with **species-specific traits** and **motivations**.
+Special-cases:
+- High memory supports migration, trap avoidance, home-range return.
+- Social motivation synchronizes flock/herd/pack members, supports emergent group behaviors.
 
 # Turn-Based Simulation Phases
 
-The simulation runs in **discrete turns**, each consisting of several phases.
+The simulation advances in **discrete turns/rounds**, each broken into several sub-phases to maximize clarity and modularity for future expansion (e.g. disease, breeding, weather effects, etc).
 
 ## Phase Overview
 
-| Phase                  | Description |
-|------------------------|-------------|
-| **Perception phase**   | Animals observe six neighbors, collect data on food, predators, safety. |
-| **Decision phase**     | Animals score possible moves using motivation weights; ties resolved by preference or randomness. |
-| **Movement resolution**| Animals move simultaneously; collisions handled by predefined rules. |
-| **Conflict resolution**| Animals in same patch after movement interact (fight, flee, coexist). |
-| **Outcome phase**      | Update states (hunger, injury recovery, motivation); replenish patch resources. |
-| **Next round**         | Loop repeats with updated world state. |
+| Phase                    | Description |
+|--------------------------|-------------|
+| **Perception**           | Update each animal's sense data (neighbor info, resource gradients, local events, patch memory). |
+| **Behavior Evaluation**  | Compute motivation scores, weighing current state (hunger, fear, fatigue, etc), memory, and group signals. |
+| **Decision**             | Each agent selects best target patch/move, optionally shares/accepts group suggestions. Tie-broken by prior direction, social cue, urgency, or random choice.|
+| **Movement Execution**   | Animals move in lock-step; collisions and patch contention resolved by priority and interaction rules. |
+| **Interaction & Conflict** | On-patch conflicts (predation, fighting, cooperation, reproduction) resolved. Outnumbering and group tactics possible. |
+| **Outcome & Environment**| Animals update internal states (energy, health, hunger), patches adjust resource levels, global changes applied. |
+| **Events & Logging**     | Update event log, trigger special effects (e.g., storms, fires, migrations), UI/animation refresh. |
+| **Next Turn**            | Proceed. Custom triggers/conditions for pause, intervention, or end scenarios. |
 
-
-Animals choose the best patch to move into using a scoring system.
+All phases modular to support plug-in features, debug logging, and batch runs for analysis.
 
 ## Scoring Formula
-score = (food_value * hunger_weight) - (danger_value * fear_weight)
 
-Additional terms can be added for terrain bonuses or special behaviors.
+score = (food_value * food_weight) + (safety_value * safety_weight) + (opportunity * opportunity_weight) + (social_input * social_weight) + (memory_bonus * memory_weight)
+
+Adjust dynamically for species, state, time of day/season, group status, and environment. Bonus/penalty terms for events like recent predator attack, patch overgrazing, environmental hazards, or achieved goals (breeding, feeding, shelter).
 
 ## Tie Resolution Options
-
-- Random choice.
-- Preference for same direction as previous move.
-- Preference for food over safety when scores match.
+- Prefer same direction as previous move (momentum preservation).
+- Use group consensus/leader-follow (for social species).
+- Favor highest value for primary motivator (e.g., food for hungry, safety for injured).
+- Random selection if all else is equal.
 
 ## Conflict Resolution Rules
-
-When two or more animals end up in the same patch:
-
 | Situation            | Possible Outcome |
 |----------------------|------------------|
-| Predator vs Prey     | Prey flees if safe neighbor exists; otherwise combat. |
-| Predator vs Predator | Strongest wins, possibly injured. |
-| Prey vs Prey         | Usually coexist unless competing for limited food. |
+| Predator vs Prey     | Prey attempts to flee reflexively to safest adjacent patch; if blocked, fight or evade check based on speed/cover/confusion. |
+| Predator vs Predator | Strongest wins, possible injuries to all; opportunity for weaker party to escape under cover. |
+| Prey vs Prey         | May coexist (social or tolerant) or compete for limited resources (food/fight); group members may cooperate. |
 
-Fleeing can occur immediately or be scheduled for the next round.
+Future event hooks: disease, mating, cooperative hunting/fending off.
 
 ## Outcome Phase Details
+- **Animals**: Increase or decrease hunger, fatigue, health, motivation. Enable opportunistic actions (e.g., mate, migrate, seek shelter) based on current season/state.
+- **Patches**: Regenerate resources (food/cover), mutate after extreme events (fire, drought).
+- **Environmental State**: Apply weather, disasters, time-of-day. Can affect movement, visibility, or resource growth.
+- All relevant changes logged/visualized for replay/debugging.
 
-At the end of each round:
-
-- **Animals**: Hunger increases, injuries heal or worsen, motivation values adjust.
-- **Patches**: Food resources replenish at a rate determined by terrain type.
-- **Map state**: Updated to reflect new occupant positions and resource levels.
+Optional advanced features:
+- Save/reload state for analysis or scenario construction.
+- Replay with adjustable speed and information overlays.
+- Achievement or challenge system (complete food webs, extreme survival, record migrations, etc).
 
