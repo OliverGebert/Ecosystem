@@ -2,10 +2,14 @@ SHELL := /bin/zsh
 export TERM := xterm-256color
 export MAKE_TERMOUT := 1
 
+# alle Variablen aus der .env exportieren
+TF_ENV_FILE := /Users/oli/.config/nvim/.env
+export $(shell sed 's/=.*//' $(TF_ENV_FILE))
+
 BLUE := \\033[1;34m
 RESET := \\033[0m
 
-.PHONY: startdocker stopdocker runstructurizr stopstructurizr buildapi testapi runapi stopapi testcli runcli testspa cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
+.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr buildapi testapi runapi stopapi testcli runcli testspa cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
 
 # ========== Configuration ==========
 
@@ -42,6 +46,20 @@ PACKAGES_IMG := $(DOCPATH)packages_$(NAME).png
 # pandoc setup
 MDS := $(wildcard $(DOCPATH)*.md)
 PDFS := $(MDS:.md=.pdf)
+
+# Terraform targets
+
+tfinit:
+	@echo "Initializing Terraform..."
+	terraform init
+
+tfapply:
+	@echo "Applying Terraform..."
+	terraform apply -auto-approve
+
+tfdestroy:
+	@echo "Destroying Terraform..."
+	terraform destroy -auto-approve
 
 # ========== High-Level Targets ==========
 

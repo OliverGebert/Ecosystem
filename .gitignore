@@ -16,5 +16,5 @@ venv/
 __pycache__/
 .pytest_cache/
 
-# MacOS
+# MacOS - redundent to .gitignore_global
 .DS_Store
