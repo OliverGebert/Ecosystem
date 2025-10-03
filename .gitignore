@@ -18,3 +18,20 @@ __pycache__/
 
 # MacOS - redundent to .gitignore_global
 .DS_Store
+
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+
+# Crash log files
+crash.log
+
+# Local Terraform directories
+.terraform/
+.terraform.lock.hcl
+
+# Optional: Backup files
+*.backup
+
+# Optional: Environment files
+.env
