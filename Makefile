@@ -9,7 +9,7 @@ export $(shell sed 's/=.*//' $(TF_ENV_FILE))
 BLUE := \\033[1;34m
 RESET := \\033[0m
 
-.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr buildapi testapi runapi stopapi testcli runcli testspa cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
+.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr dockerbuildapi testapi dockerrunapi dockerstopapi dockerapirerun testcli runcli startnpmdev stopnpmdev cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
 
 # ========== Configuration ==========
 
@@ -19,6 +19,7 @@ DOCPATH := documentation/
 PICPATH := $(DOCPATH)pictures/
 CLIPATH := cliclient/src/
 APIPATH := restapi/
+SPAPATH := spa/
 PYTHONPATH=cliclient/src python cliclient/src/Eco/ecosystem.py 
 
 # restapi setup
@@ -88,7 +89,7 @@ stopstructurizr:
 	docker stop $(STRUCTURIZRCONTAINER_NAME) || true
 
 # build Ecosystem API container
-buildapi:
+dockerbuildapi:
 	@printf "$(BLUE)*** build fastapi container $(RESET)\\n"
 	docker build -t $(IMAGE_NAME) -f $(APIPATH)Dockerfile $(APIPATH)
 
@@ -98,14 +99,18 @@ testapi:
 	hurl $(APIPATH)app/ecoapi.hurl
 
 # run Ecosystem API
-runapi:
+dockerrunapi:
 	@printf "$(BLUE)*** run fastapi container on port $(APIPORT)$(RESET)\\n"
 	docker run -dit --rm --name $(APICONTAINER_NAME) -p $(APIPORT):$(APIPORT) $(IMAGE_NAME)
 
 # stop restapi container
-stopapi:
+dockerstopapi:
 	@printf "$(BLUE)*** stop fastapi container $(RESET)\\n"
 	docker stop $(APICONTAINER_NAME) || true
+
+# stop api docker container, build api docker container, run api docker container
+
+dockerapirerun: dockerstopapi dockerbuildapi dockerrunapi
 
 # test CLI client
 testcli:
@@ -117,8 +122,12 @@ runcli:
 	@printf "$(BLUE)*** python ecosystem execution$(RESET)\\n"
 	PYTHONPATH=$(CLIPATH) python $(CLIPATH)Eco/ecosystem.py 
 
-# test SPA client
-testspa:
+# start npm dev server
+startnpmdev:
+	cd $(SPAPATH) && npm run dev # default: http://localhost:5173 
+
+# stop npm dev server
+stopnpmdev:
 
 # ===== clean all docs artifacts
 cleandocs:
