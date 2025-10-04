@@ -9,7 +9,7 @@ export $(shell sed 's/=.*//' $(TF_ENV_FILE))
 BLUE := \\033[1;34m
 RESET := \\033[0m
 
-.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr dockerbuildapi testapi dockerrunapi dockerstopapi dockerapirerun testcli runcli startnpmdev stopnpmdev cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
+.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr dockerbuildapi testapi provisionapi dockerrunapi dockerstopapi dockerapirerun testcli runcli startnpmdev stopnpmdev cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
 
 # ========== Configuration ==========
 
@@ -20,6 +20,7 @@ PICPATH := $(DOCPATH)pictures/
 CLIPATH := cliclient/src/
 APIPATH := restapi/
 SPAPATH := spa/
+APIPATH := restapi/
 PYTHONPATH=cliclient/src python cliclient/src/Eco/ecosystem.py 
 
 # restapi setup
@@ -96,7 +97,11 @@ dockerbuildapi:
 # test Ecosystem API
 testapi:
 	@printf "$(BLUE)*** test fastapi container on port $(APIPORT)$(RESET)\\n"
-	hurl $(APIPATH)app/ecoapi.hurl
+	cd $(APIPATH) && hurl --test test.hurl
+
+# provision api with initial data for testing
+provisionapi:
+	cd $(APIPATH) && hurl -v provision.hurl
 
 # run Ecosystem API
 dockerrunapi:

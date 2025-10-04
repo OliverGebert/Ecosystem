@@ -51,6 +51,16 @@ def create_ecosystem(ecosystem: Ecosystem):
     return ecosystem
 
 
+@app.post("/ecosystems/deleteall")
+def delete_all_ecosystems():
+    count_eco = len(ecosystems)
+    ecosystems.clear()
+    return {
+        "message": "All ecosystems and patches deleted",
+        "ecosystems_deleted": count_eco,
+    }
+
+
 @app.get("/ecosystems/{id}", response_model=Ecosystem)
 def get_ecosystem(id: str):
     for eco in ecosystems:

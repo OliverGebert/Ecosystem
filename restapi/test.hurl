@@ -1,8 +1,17 @@
+# Create a new ecosystem
+POST http://localhost:8040/ecosystems/deleteall
+Content-Type: application/json
+{
+}
+HTTP/1.1 200
 # List all ecosystems
+
 GET http://localhost:8040/ecosystems
 HTTP/1.1 200
+# Prüfe, dass die Liste leer ist (zu Beginn)
+[Asserts]
+bytes count == 2
 
-# Create a new ecosystem
 POST http://localhost:8040/ecosystems
 Content-Type: application/json
 
