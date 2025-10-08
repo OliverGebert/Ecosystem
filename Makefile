@@ -2,14 +2,24 @@ SHELL := /bin/zsh
 export TERM := xterm-256color
 export MAKE_TERMOUT := 1
 
-# alle Variablen aus der .env exportieren
+# -------------------------------
+# alle Variablen aus der nvim/.env exportieren
+# -------------------------------
 TF_ENV_FILE := /Users/oli/.config/nvim/.env
 export $(shell sed 's/=.*//' $(TF_ENV_FILE))
 
 BLUE := \\033[1;34m
 RESET := \\033[0m
 
-.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr dockerbuildapi testapi provisionapi dockerrunapi dockerstopapi dockerapirerun testcli runcli startnpmdev stopnpmdev cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
+# -------------------------------
+# Load environment variables from .env if present
+# -------------------------------
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
+.PHONY: tfinit tfapply tfdestroy startdocker stopdocker runstructurizr stopstructurizr dockerbuildapi dockerdeploy restartAWA dockerinfo testapi provisionapi dockerrunapi dockerstopapi dockerapirerun testcli runcli startnpmdev stopnpmdev cleandocs generatepuml generatedocs generate_svg generate_drawio generate_py generate_md
 
 # ========== Configuration ==========
 
@@ -24,9 +34,16 @@ APIPATH := restapi/
 PYTHONPATH=cliclient/src python cliclient/src/Eco/ecosystem.py 
 
 # restapi setup
-IMAGE_NAME := eco-fastapi-app
+IMAGE_NAME := fastapi
+IMAGE_TAG := latest
 APICONTAINER_NAME := eco-fastapi-container
-APIPORT := 8040
+APIPORT := 8000
+# These now come from the .env file via make
+ACR_NAME ?= fastapiacr12345
+RESOURCE_GROUP ?= rg-fastapi-app
+WEBAPP_NAME ?= fastapi-webapp-12345
+ACR_LOGIN_SERVER := $(ACR_NAME).azurecr.io
+IMAGE := $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 # Draw.io setup
 DRAWIOS := $(wildcard $(DOCPATH)*.drawio)
@@ -91,31 +108,55 @@ stopstructurizr:
 
 # build Ecosystem API container
 dockerbuildapi:
-	@printf "$(BLUE)*** build fastapi container $(RESET)\\n"
-	docker build -t $(IMAGE_NAME) -f $(APIPATH)Dockerfile $(APIPATH)
+	@printf "$(BLUE)*** build fastapi container: $(IMAGE_NAME):$(IMAGE_TAG) $(RESET)\\n"
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) -f $(APIPATH)Dockerfile $(APIPATH)
 
-# test Ecosystem API
+# docker tag, acr login + docker push
+dockerdeploy:
+	# tag image for ACR
+	@echo "🏷️  Tagging image for ACR..."
+	docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE)
+	# Login to ACR
+	@echo "🔑 Logging in to Azure Container Registry: $(ACR_NAME)"
+	az acr login --name $(ACR_NAME)
+	## Push image to ACR
+	@echo "🚀 Pushing image to $(IMAGE)"
+	docker push $(IMAGE)
+
+## restart app service to force pull of latest image
+restartAWA:
+	@echo "♻️  Restarting Azure Web App: $(WEBAPP_NAME)"
+	az webapp restart --name $(WEBAPP_NAME) --resource-group $(RESOURCE_GROUP)
+
+dockerinfo:
+	@echo "☁️  RESOURCE RG:  $(RESOURCE_GROUP)"
+	@echo "📦  IMAGE:        $(IMAGE)"
+	@echo "🏷️  TAG:          $(IMAGE_TAG)"
+	@echo "🏢  ACR:          $(ACR_NAME)"
+	@echo "🌐  WEB APP:      $(WEBAPP_NAME)"
+
+# local test Ecosystem API
 testapi:
 	@printf "$(BLUE)*** test fastapi container on port $(APIPORT)$(RESET)\\n"
 	cd $(APIPATH) && hurl --test test.hurl
 
-# provision api with initial data for testing
+# local provision api with initial data for testing
 provisionapi:
 	cd $(APIPATH) && hurl -v provision.hurl
 
-# run Ecosystem API
+# local run Ecosystem API
 dockerrunapi:
 	@printf "$(BLUE)*** run fastapi container on port $(APIPORT)$(RESET)\\n"
 	docker run -dit --rm --name $(APICONTAINER_NAME) -p $(APIPORT):$(APIPORT) $(IMAGE_NAME)
 
-# stop restapi container
+# local stop restapi container
 dockerstopapi:
 	@printf "$(BLUE)*** stop fastapi container $(RESET)\\n"
 	docker stop $(APICONTAINER_NAME) || true
 
-# stop api docker container, build api docker container, run api docker container
+# local stop api docker container, run api docker container
 
-dockerapirerun: dockerstopapi dockerbuildapi dockerrunapi
+dockerapirerun: dockerstopapi dockerrunapi
 
 # test CLI client
 testcli:
